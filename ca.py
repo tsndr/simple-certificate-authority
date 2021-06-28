@@ -57,8 +57,14 @@ def usage(command = ''):
         print('')
         print('COMMANDS')
         print('  list            List all keys')
+        print('  get             Get key content')
         print('  create          Create a new key')
         print('  delete          Delete existing key')
+    elif command == 'key get':
+        print('  ' + BASE_CMD + ' ' + command + ' <domain>')
+        print('')
+        print('ARGUMENTS')
+        print('  domain          Domain name')
     elif command == 'key create':
         print('  ' + BASE_CMD + ' ' + command + ' [OPTIONS] <domain>')
         print('')
@@ -78,8 +84,14 @@ def usage(command = ''):
         print('')
         print('COMMANDS')
         print('  list            List all request')
+        print('  get             Get request content')
         print('  create          Create a new request')
         print('  delete          Delete existing request')
+    elif command == 'request get':
+        print('  ' + BASE_CMD + ' ' + command + ' <domain>')
+        print('')
+        print('ARGUMENTS')
+        print('  domain          Domain name')
     elif command == 'request create':
         print('  ' + BASE_CMD + ' ' + command + ' [OPTIONS] <domain>')
         print('')
@@ -98,9 +110,15 @@ def usage(command = ''):
         print('')
         print('COMMANDS')
         print('  list            List all certificates')
+        print('  get             Get certificate content')
         print('  create          Create a new certificate')
         # print('  revoke          Revoke existing certificate')
         print('  delete          Delete existing certificate')
+    elif command == 'certificate get':
+        print('  ' + BASE_CMD + ' ' + command + ' <domain>')
+        print('')
+        print('ARGUMENTS')
+        print('  domain          Domain name')
     elif command == 'certificate create':
         print('  ' + BASE_CMD + ' ' + command + ' [OPTIONS] <domain>')
         print('')
@@ -116,7 +134,7 @@ def usage(command = ''):
         print('ARGUMENTS')
         print('  domain          Domain name')
     elif command == 'certificate delete':
-        print('  ' + BASE_CMD + ' ' + command + ' <domain>')
+        print('  ' + BASE_CMD + ' ' + command + ' [OPTIONS] <domain>')
         print('')
         print('OPTIONS')
         print('  -a, --all       Delete key and request as well')
@@ -127,11 +145,11 @@ def usage(command = ''):
         print('  domain          Domain name')
 
 def init(args):
+    opts, args = getopt.getopt(args, 'fd:', ['force', 'days='])
+
     if len(args) and args[0] == 'help':
         usage('init')
         return 0
-
-    opts, args = getopt.getopt(args, 'fd:', ['force', 'days='])
 
     force = False
     days = 36500 # 100 years
@@ -184,6 +202,19 @@ def key_list(args):
     print('KEYS')
     for key in os.listdir(KEY_DIR):
         print('  ' + key.replace(KEY_EXT, ''))
+    return 0
+
+def key_get(args):
+    if not len(args) or args[0] == 'help':
+        if not len(args):
+            print('\033[31mError: Required argument missing!\033[39m')
+            print('')
+        usage('key get')
+        return 0
+
+    domain = args[0]
+
+    os.system('cat "' + KEY_DIR + '/' + domain + KEY_EXT + '"')
     return 0
 
 def key_create(args):
@@ -240,6 +271,8 @@ def key(args):
     if not len(args) or args[0] == 'help':
         usage('key')
         return 0
+    elif args[0] == 'get':
+        return key_get(args[1:])
     elif args[0] == 'list':
         return key_list(args[1:])
     elif args[0] == 'create':
@@ -254,15 +287,28 @@ def request_list(args):
         print('  ' + req.replace(REQ_EXT, ''))
     return 0
 
+def request_get(args):
+    if not len(args) or args[0] == 'help':
+        if not len(args):
+            print('\033[31mError: Required argument missing!\033[39m')
+            print('')
+        usage('request get')
+        return 0
+
+    domain = args[0]
+
+    os.system('cat "' + REQ_DIR + '/' + domain + REQ_EXT + '"')
+    return 0
+
 def request_create(args):
+    opts, args = getopt.getopt(args, 'f', ['force'])
+
     if not len(args) or args[0] == 'help':
         if not len(args):
             print('\033[31mError: Required argument missing!\033[39m')
             print('')
         usage('request create')
         return 0
-
-    opts, args = getopt.getopt(args, 'f', ['force'])
 
     force = False
     domain = args[0]
@@ -312,6 +358,8 @@ def request(args):
     if not len(args) or args[0] == 'help':
         usage('request')
         return 0
+    elif args[0] == 'get':
+        return request_get(args[1:])
     elif args[0] == 'list':
         return request_list(args[1:])
     elif args[0] == 'create':
@@ -326,15 +374,28 @@ def certificate_list(args):
         print('  ' + crt.replace(CRT_EXT, ''))
     return 0
 
+def certificate_get(args):
+    if not len(args) or args[0] == 'help':
+        if not len(args):
+            print('\033[31mError: Required argument missing!\033[39m')
+            print('')
+        usage('certificate get')
+        return 0
+
+    domain = args[0]
+
+    os.system('cat "' + CRT_DIR + '/' + domain + CRT_EXT + '"')
+    return 0
+
 def certificate_create(args):
+    opts, args = getopt.getopt(args, 'fd:', ['force', 'days='])
+
     if not len(args) or args[0] == 'help':
         if not len(args):
             print('\033[31mError: Required argument missing!\033[39m')
             print('')
         usage('certificate create')
         return 0
-
-    opts, args = getopt.getopt(args, 'fd:', ['force', 'days'])
 
     force = False
     days = 730
@@ -357,7 +418,7 @@ def certificate_create(args):
         usage('request create')
         return 1
 
-    if not os.path.exists(key_file):
+    if not os.path.exists(key_file) and not os.path.exists(req_file):
         os.system('openssl genrsa -out "' + key_file + '" 2048')
 
     if not os.path.exists(req_file):
@@ -365,7 +426,7 @@ def certificate_create(args):
             subj = yaml.full_load(file)
             os.system('openssl req -new -sha512 -key "' + key_file + '" -subj "/C=' + subj['country'] + '/ST=' + subj['state'] + '/L=' + subj['city'] + '/O=' + subj['organization'] + '/CN=' + domain + '" -out ' + req_file)
 
-    os.system('openssl x509 -req -sha512 -in "' + req_file + '" -CA "' + ROOT_CRT + '" -CAkey "' + ROOT_KEY + '" -CAcreateserial -days ' + str(days) + ' -out "' + crt_file + '" -extfile <(printf "subjectAltName=DNS:' + domain + '")')
+    os.system('printf "subjectAltName=DNS:' + domain + '" | openssl x509 -req -sha512 -in "' + req_file + '" -CA "' + ROOT_CRT + '" -CAkey "' + ROOT_KEY + '" -CAcreateserial -days ' + str(days) + ' -out "' + crt_file + '" -extfile -')
 
     return 0
 
@@ -380,12 +441,7 @@ def certificate_revoke(args):
     return 0
 
 def certificate_delete(args):
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], 'h', ['help'])
-    except getopt.GetoptError as err:
-        print(err)
-        usage()
-        return 2
+    opts, args = getopt.getopt(args, 'akr', ['all', 'key', 'request'])
 
     if not len(args) or args[0] == 'help':
         if not len(args):
