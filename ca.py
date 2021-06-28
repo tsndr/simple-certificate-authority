@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import sys
 import os
-import string
 import getopt
 import yaml
 
@@ -51,7 +50,7 @@ def usage(command = ''):
         print('ARGUMENTS')
         print('  country         Uppercase two letter country code')
         print('  state           The state, either as string or short')
-        print('  city            City or origin')
+        print('  city            City of origin')
         print('  organization    Name of the CA')
     elif command == 'key':
         print('  ' + BASE_CMD + ' ' + command + ' <COMMAND> help')
@@ -100,7 +99,7 @@ def usage(command = ''):
         print('COMMANDS')
         print('  list            List all certificates')
         print('  create          Create a new certificate')
-        print('  revoke          Revoke existing certificate')
+        # print('  revoke          Revoke existing certificate')
         print('  delete          Delete existing certificate')
     elif command == 'certificate create':
         print('  ' + BASE_CMD + ' ' + command + ' [OPTIONS] <domain>')
@@ -118,6 +117,11 @@ def usage(command = ''):
         print('  domain          Domain name')
     elif command == 'certificate delete':
         print('  ' + BASE_CMD + ' ' + command + ' <domain>')
+        print('')
+        print('OPTIONS')
+        print('  -a, --all       Delete key and request as well')
+        print('  -k, --key       Delete key as well')
+        print('  -r, --request   Delete request as well')
         print('')
         print('ARGUMENTS')
         print('  domain          Domain name')
@@ -204,7 +208,7 @@ def key_create(args):
 
     key_file = os.path.join(KEY_DIR, domain + KEY_EXT)
 
-    if os.path.exists(key_file):
+    if os.path.exists(key_file) and not force:
         print('\033[31mError: Key file already exists! Use --force to overwrite it.\033[39m')
         print('')
         usage('key create')
@@ -247,7 +251,7 @@ def key(args):
 def request_list(args):
     print('REQUESTS')
     for req in os.listdir(REQ_DIR):
-        print('  ' + req.replace(CSR_EXT, ''))
+        print('  ' + req.replace(REQ_EXT, ''))
     return 0
 
 def request_create(args):
@@ -372,16 +376,43 @@ def certificate_revoke(args):
             print('')
         usage('certificate revoke')
         return 0
-
+        # TODO: Implement
     return 0
 
 def certificate_delete(args):
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], 'h', ['help'])
+    except getopt.GetoptError as err:
+        print(err)
+        usage()
+        return 2
+
     if not len(args) or args[0] == 'help':
         if not len(args):
             print('\033[31mError: Required argument missing!\033[39m')
             print('')
         usage('certificate delete')
         return 0
+
+    domain = args[0]
+
+    delete_key = False
+    delete_request = False
+
+    for k,v in opts:
+        if k == '-a' or k == '--all':
+            delete_key = True
+            delete_request = True
+        if k == '-k' or k == '--key':
+            delete_key = True
+        if k == '-r' or k == '--request':
+            delete_request = True
+
+        if delete_key:
+            os.system('rm "' + os.path.join(KEY_DIR, domain + KEY_EXT) + '"')
+        if delete_request:
+            os.system('rm "' + os.path.join(REQ_DIR, domain + REQ_EXT) + '"')
+        os.system('rm "' + os.path.join(CRT_DIR, domain + CRT_EXT) + '"')
 
     return 0
 
@@ -393,8 +424,8 @@ def certificate(args):
         return certificate_list(args[1:])
     elif args[0] == 'create':
         return certificate_create(args[1:])
-    elif args[0] == 'revoke':
-        return certificate_revoke(args[1:])
+    # elif args[0] == 'revoke':
+    #     return certificate_revoke(args[1:])
     elif args[0] == 'delete':
         return certificate_delete(args[1:])
     return 0
