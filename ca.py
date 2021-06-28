@@ -6,7 +6,7 @@ import yaml
 
 BASE_CMD = os.path.basename(sys.argv[0])
 
-BASE_DIR = os.path.abspath(os.path.os.getcwd())
+BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 CA_DIR = os.path.join(BASE_DIR, 'ca')
 ROOT_DIR = os.path.join(CA_DIR, 'root')
 CFG_DIR = os.path.join(CA_DIR, 'cfg')
@@ -365,7 +365,7 @@ def certificate_create(args):
             subj = yaml.full_load(file)
             os.system('openssl req -new -sha512 -key "' + key_file + '" -subj "/C=' + subj['country'] + '/ST=' + subj['state'] + '/L=' + subj['city'] + '/O=' + subj['organization'] + '/CN=' + domain + '" -out ' + req_file)
 
-    os.system('openssl x509 -req -sha512 -in "' + req_file + '" -CA "' + ROOT_CRT + '" -CAkey "' + ROOT_KEY + '" -CAcreateserial -days ' + str(days) + ' -out "' + crt_file + '"')
+    os.system('openssl x509 -req -sha512 -in "' + req_file + '" -CA "' + ROOT_CRT + '" -CAkey "' + ROOT_KEY + '" -CAcreateserial -days ' + str(days) + ' -out "' + crt_file + '" -extfile <(printf "subjectAltName=DNS:' + domain + '")')
 
     return 0
 
