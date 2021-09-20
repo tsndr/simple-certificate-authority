@@ -2,7 +2,7 @@
 
 This is just a simplified CLI for OpenSSL to make it easier to issue self signed certificates.
 
-`ca help`
+`./ca.py help`
 ```
 USAGE
   ca help
@@ -16,7 +16,7 @@ COMMANDS
   certificate     Manage certificates
 ```
 
-`ca certificate help`
+`./ca.py certificate help`
 ```
 USAGE
   ca certificate help
